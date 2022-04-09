@@ -1,0 +1,64 @@
+{
+  "ignition": {
+    "version": "3.3.0"
+  },
+  "passwd": {
+    "users": [
+      {
+        "name": "core",
+        "passwordHash": "XXX"
+      }
+    ]
+  },
+  "storage": {
+    "files": [
+      {
+        "path": "/etc/hostname",
+        "contents": {
+          "source": "data:,test"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/systemd/zram-generator.conf",
+        "contents": {
+          "source": "data:;base64,IyBUaGlzIGNvbmZpZyBmaWxlIGVuYWJsZXMgYSAvZGV2L3pyYW0wIGRldmljZSB3aXRoIHRoZSBkZWZhdWx0IHNldHRpbmdzClt6cmFtMF0K"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/zincati/config.d/55-updates-strategy.toml",
+        "contents": {
+          "source": "data:;base64,W3VwZGF0ZXNdCnN0cmF0ZWd5ID0gInBlcmlvZGljIgpbW3VwZGF0ZXMucGVyaW9kaWMud2luZG93XV0KZGF5cyA9IFsgIlNhdCIsICJTdW4iIF0Kc3RhcnRfdGltZSA9ICIyMjozMCIKbGVuZ3RoX21pbnV0ZXMgPSA2MAo="
+        }
+      },
+      {
+        "path": "/etc/zincati/config.d/51-rollout-wariness.toml",
+        "contents": {
+          "source": "data:,%5Bidentity%5D%0Arollout_wariness%20%3D%200.5%0A"
+        }
+      },
+      {
+        "path": "/etc/NetworkManager/system-connections/ens2.nmconnection",
+        "contents": {
+          "source": "data:,%5Bconnection%5D%0Aid%3Dens2%0Atype%3Dethernet%0Ainterface-name%3Dens2%0A%5Bipv4%5D%0Aaddress1%3D10.10.11.11%2F24%2C10.10.10.1%0Adns%3D1.1.1.1%3B%0Adns-search%3Dleven.dev%0Amay-fail%3Dfalse%0Amethod%3Dmanual%0A"
+        },
+        "mode": 384
+      }
+    ]
+  },
+  "systemd": {
+    "units": [
+      {
+        "contents": "[Unit]\nDescription=Bootupd automatic update\n\n[Service]\nExecStart=/usr/bin/bootupctl update\nRemainAfterExit=yes\n\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "custom-bootupd-auto.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=MyApp\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nTimeoutStartSec=0\nExecStartPre=-/bin/podman kill busybox1\nExecStartPre=-/bin/podman rm busybox1\nExecStartPre=/bin/podman pull busybox\nExecStart=/bin/podman run --name busybox1 busybox /bin/sh -c \"trap 'exit 0' INT TERM; while true; do echo Hello World; sleep 1; done\"\n\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "hello.service"
+      }
+    ]
+  }
+}

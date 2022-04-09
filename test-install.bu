@@ -1,0 +1,77 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+    - name: core
+      password_hash: XXX
+storage:
+  files:
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: test
+    - path: /etc/systemd/zram-generator.conf
+      mode: 0644
+      contents:
+        inline: |
+          # This config file enables a /dev/zram0 device with the default settings
+          [zram0]
+    - path: /etc/zincati/config.d/55-updates-strategy.toml
+      contents:
+        inline: |
+          [updates]
+          strategy = "periodic"
+          [[updates.periodic.window]]
+          days = [ "Sat", "Sun" ]
+          start_time = "22:30"
+          length_minutes = 60
+    - path: /etc/zincati/config.d/51-rollout-wariness.toml
+      contents:
+        inline: |
+          [identity]
+          rollout_wariness = 0.5
+    - path: /etc/NetworkManager/system-connections/ens2.nmconnection
+      mode: 0600
+      contents:
+        inline: |
+          [connection]
+          id=ens2
+          type=ethernet
+          interface-name=ens2
+          [ipv4]
+          address1=10.10.11.11/24,10.10.10.1
+          dns=1.1.1.1;
+          dns-search=leven.dev
+          may-fail=false
+          method=manual
+systemd:
+  units:
+    - name: custom-bootupd-auto.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Bootupd automatic update
+
+        [Service]
+        ExecStart=/usr/bin/bootupctl update
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: hello.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=MyApp
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        TimeoutStartSec=0
+        ExecStartPre=-/bin/podman kill busybox1
+        ExecStartPre=-/bin/podman rm busybox1
+        ExecStartPre=/bin/podman pull busybox
+        ExecStart=/bin/podman run --name busybox1 busybox /bin/sh -c "trap 'exit 0' INT TERM; while true; do echo Hello World; sleep 1; done"
+
+        [Install]
+        WantedBy=multi-user.target
